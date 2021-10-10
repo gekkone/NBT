@@ -1,5 +1,5 @@
 {
-    "name": "rickselby/nbt",
+    "name": "gekkone/nbt",
     "type": "library",
     "description": "Parser/Writer for the NBT file format",
     "keywords": ["NBT", "decode", "encode", "binary"],
@@ -28,6 +28,12 @@
             "email": "rick@selby-family.co.uk",
             "homepage": "https://github.com/rickselby",
             "role": "Developer"
+        },
+        {
+            "name": "Gekkone",
+            "email": "dev@gekkone.ru",
+            "homepage": "https://github.com/gekkone",
+            "role": "Developer"
         }
     ],
     "require": {
@@ -35,7 +41,9 @@
         "nicmart/tree": "~0.2"
     },
     "require-dev": {
-        "mikey179/vfsstream": "^1.6.0"
+        "ext-gmp": "*",
+        "mikey179/vfsstream": "^1.6.0",
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {

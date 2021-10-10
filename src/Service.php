@@ -132,6 +132,9 @@ class Service
     public function writeString(Node $tree)
     {
         $stream = fopen('php://memory', 'r+b');
+        if (!$stream) {
+            throw new \Exception('Failed open write steam');
+        }
         $this->writeFilePointer($stream, $tree);
         rewind($stream);
 
@@ -219,6 +222,9 @@ class Service
             case Tag::TAG_INT_ARRAY:
                 $node->setValue($this->dataHandler->getTAGIntArray($fPtr));
                 break;
+            case Tag::TAG_LONG_ARRAY:
+                $node->setValue($this->dataHandler->getTAGLongArray($fPtr));
+                break;
             case Tag::TAG_LIST: // List
                 $tagID = $this->dataHandler->getTAGByte($fPtr);
                 $listLength = $this->dataHandler->getTAGInt($fPtr);
@@ -244,6 +250,8 @@ class Service
                     $compoundNode = new Node();
                 }
                 break;
+            default:
+                throw new \Exception('Unsupported tag type: '. $tagType);
         }
     }
 
@@ -277,6 +285,8 @@ class Service
                 return $this->dataHandler->putTAGString($fPtr, $node->getValue());
             case Tag::TAG_INT_ARRAY: // Byte array
                 return $this->dataHandler->putTAGIntArray($fPtr, $node->getValue());
+            case Tag::TAG_LONG_ARRAY: // Long array
+                return $this->dataHandler->putTAGLongArray($fPtr, $node->getValue());
             case Tag::TAG_LIST: // List
                 if (!($this->dataHandler->putTAGByte($fPtr, $node->getPayloadType())
                     && $this->dataHandler->putTAGInt($fPtr, count($node->getChildren()))
@@ -303,6 +313,8 @@ class Service
                 return true;
             case Tag::TAG_END: // End tag
                 return is_int(fwrite($fPtr, "\0"));
+            default:
+                throw new \Exception('Unknown tag');
         }
     }
 }

@@ -6,6 +6,44 @@ class DataHandler
 {
     private $floatString = "\77\360\0\0\0\0\0\0";
 
+    public function getUInt8($fPtr)
+    {
+        if (is_resource($fPtr)) {
+            return unpack('C', fread($fPtr, 1))[1];
+        } else {
+            throw new \Exception('Передан невалидный тип данных');
+        }
+    }
+
+    public function putUInt8($fPtr, int $value)
+    {
+        fwrite($fPtr, pack('C', $value), 1);
+    }
+
+    public function getUInt8FromStr(string $data, int $offset)
+    {
+        return unpack('C', $data, $offset)[1];
+    }
+
+    public function getUInt32BE($fPtr)
+    {
+        if (is_resource($fPtr)) {
+            return unpack('N', fread($fPtr, 4))[1];
+        } else {
+            throw new \Exception('Передан невалидный тип данных');
+        }
+    }
+
+    public function putUInt32BE($fPtr, int $value)
+    {
+        fwrite($fPtr, pack('N', $value), 4);
+    }
+
+    public function getUInt32BEFromStr(string $data, int $offset)
+    {
+        return unpack('N', $data, $offset)[1];
+    }
+
     /**
      * Read a byte tag from the file.
      *
@@ -22,7 +60,7 @@ class DataHandler
      * Write a byte tag to the file.
      *
      * @param resource $fPtr
-     * @param int      $byte
+     * @param int $byte
      *
      * @return bool
      */
@@ -44,23 +82,23 @@ class DataHandler
             return '';
         }
         // Read in number of bytes specified by string length, and decode from utf8.
-        return utf8_decode(fread($fPtr, $stringLength));
+        return fread($fPtr, $stringLength);
     }
 
     /**
      * Write a string to the file.
      *
      * @param resource $fPtr
-     * @param string   $string
+     * @param string $string
      *
      * @return bool
      */
     public function putTAGString($fPtr, $string)
     {
-        $value = utf8_encode($string);
+        $value = $string;
 
         return $this->putTAGShort($fPtr, strlen($value))
-                && is_int(fwrite($fPtr, $value));
+            && is_int(fwrite($fPtr, $value));
     }
 
     /**
@@ -79,7 +117,7 @@ class DataHandler
      * Write a short int to the file.
      *
      * @param resource $fPtr
-     * @param int      $short
+     * @param int $short
      *
      * @return bool
      */
@@ -104,7 +142,7 @@ class DataHandler
      * Write an integer to the file.
      *
      * @param resource $fPtr
-     * @param int      $int
+     * @param int $int
      *
      * @return bool
      */
@@ -135,7 +173,7 @@ class DataHandler
             if (!extension_loaded('gmp')) {
                 trigger_error(
                     'This file contains a 64-bit number and execution cannot continue. '
-                    .'Please install the GMP extension for 64-bit number handling.',
+                    . 'Please install the GMP extension for 64-bit number handling.',
                     E_USER_ERROR
                 );
             }
@@ -158,7 +196,7 @@ class DataHandler
      * Write a long int to the file.
      *
      * @param resource $fPtr
-     * @param int      $long
+     * @param int $long
      *
      * @return bool
      */
@@ -173,7 +211,7 @@ class DataHandler
             if (!extension_loaded('gmp')) {
                 trigger_error(
                     'This file contains a 64-bit number and execution cannot continue. '
-                    .'Please install the GMP extension for 64-bit number handling.',
+                    . 'Please install the GMP extension for 64-bit number handling.',
                     E_USER_ERROR
                 );
             }
@@ -186,16 +224,18 @@ class DataHandler
             $quarters[2] = gmp_div(gmp_and($long, '0x00000000FFFF0000'), gmp_pow(2, 16));
             $quarters[3] = gmp_and($long, '0xFFFF');
 
-            $wResult = is_int(fwrite(
-                $fPtr,
-                pack(
-                    'nnnn',
-                    gmp_intval($quarters[0]),
-                    gmp_intval($quarters[1]),
-                    gmp_intval($quarters[2]),
-                    gmp_intval($quarters[3])
+            $wResult = is_int(
+                fwrite(
+                    $fPtr,
+                    pack(
+                        'nnnn',
+                        gmp_intval($quarters[0]),
+                        gmp_intval($quarters[1]),
+                        gmp_intval($quarters[2]),
+                        gmp_intval($quarters[3])
+                    )
                 )
-            ));
+            );
         }
 
         return $wResult;
@@ -217,7 +257,7 @@ class DataHandler
      * Write a float to the file.
      *
      * @param resource $fPtr
-     * @param float    $float
+     * @param float $float
      *
      * @return bool
      */
@@ -242,7 +282,7 @@ class DataHandler
      * Write a double to the file.
      *
      * @param resource $fPtr
-     * @param float    $double
+     * @param float $double
      *
      * @return bool
      */
@@ -255,8 +295,8 @@ class DataHandler
      * Get a double or a float from the file.
      *
      * @param resource $fPtr
-     * @param string   $packType Code for the unpack function
-     * @param int      $bytes    Bytes to read
+     * @param string $packType Code for the unpack function
+     * @param int $bytes Bytes to read
      *
      * @return float
      */
@@ -273,8 +313,8 @@ class DataHandler
      * Write a double or a float to the file.
      *
      * @param resource $fPtr
-     * @param float    $value
-     * @param string   $packType Code for the pack function
+     * @param float $value
+     * @param string $packType Code for the pack function
      *
      * @return bool
      */
@@ -300,6 +340,13 @@ class DataHandler
     public function getTAGByteArray($fPtr)
     {
         $arrayLength = $this->getTAGInt($fPtr);
+        if ($arrayLength === 0) {
+            return [];
+        }
+
+        if ($arrayLength < 0) {
+            throw new \Exception('Array count can\'t < 0');
+        }
 
         return array_values(unpack('c*', fread($fPtr, $arrayLength)));
     }
@@ -308,7 +355,7 @@ class DataHandler
      * Write an array of bytes to the file.
      *
      * @param resource $fPtr
-     * @param int[]    $array
+     * @param int[] $array
      *
      * @return bool
      */
@@ -340,7 +387,7 @@ class DataHandler
      * Write an array of integers to the file.
      *
      * @param resource $fPtr
-     * @param int[]    $array
+     * @param int[] $array
      *
      * @return bool
      */
@@ -350,24 +397,58 @@ class DataHandler
     }
 
     /**
+     * Read an array of integers from the file.
+     *
+     * @param resource $fPtr
+     *
+     * @return int[]
+     */
+    public function getTAGLongArray($fPtr)
+    {
+        $arrayLength = $this->getTAGInt($fPtr);
+
+        $values = [];
+        for ($i = 0; $i < $arrayLength; ++$i) {
+            $values[] = $this->getTAGLong($fPtr);
+        }
+
+        return $values;
+    }
+
+    /**
      * Write an array of integers to the file.
      *
      * @param resource $fPtr
-     * @param array    $array
-     * @param string   $packType Code for the pack function
+     * @param int[] $array
+     *
+     * @return bool
+     */
+    public function putTAGLongArray($fPtr, $array)
+    {
+        return $this->putTAGArray($fPtr, $array, 'J');
+    }
+
+    /**
+     * Write an array of integers to the file.
+     *
+     * @param resource $fPtr
+     * @param array $array
+     * @param string $packType Code for the pack function
      *
      * @return bool
      */
     private function putTagArray($fPtr, $array, $packType)
     {
         return $this->putTAGInt($fPtr, count($array))
-            && is_int(fwrite(
-                $fPtr,
-                call_user_func_array(
-                    'pack',
-                    array_merge([$packType.count($array)], $array)
+            && is_int(
+                fwrite(
+                    $fPtr,
+                    call_user_func_array(
+                        'pack',
+                        array_merge([$packType . count($array)], $array)
+                    )
                 )
-            ));
+            );
     }
 
     /**
@@ -380,8 +461,8 @@ class DataHandler
      */
     private function unsignedToSigned($value, $size)
     {
-        if ($value >= (int) pow(2, $size - 1)) {
-            $value -= (int) pow(2, $size);
+        if ($value >= (int)pow(2, $size - 1)) {
+            $value -= (int)pow(2, $size);
         }
 
         return $value;
@@ -398,7 +479,7 @@ class DataHandler
     private function signedToUnsigned($value, $size)
     {
         if ($value < 0) {
-            $value += (int) pow(2, $size);
+            $value += (int)pow(2, $size);
         }
 
         return $value;

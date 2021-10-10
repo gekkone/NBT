@@ -15,7 +15,7 @@ The library can be pulled in using composer; add the following to your composer.
 ```
 {
     "require": {
-        "rickselby/nbt": "~4.0"
+        "gekkone/nbt": "~4.1"
     }
 }
 ```
